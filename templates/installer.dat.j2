@@ -1,0 +1,7 @@
+postgres/autoinstall skip
+smtp/autoinstall skip
+server/autoinstall skip
+memcached/autoinstall skip
+
+server/hostname {{ ansible_facts['nodename'] }}
+server/ssl no

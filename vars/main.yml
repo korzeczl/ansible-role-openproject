@@ -1,0 +1,11 @@
+---
+# vars file for openproject
+
+postgresql_databases:
+  - name: "{{ openproject_psql_db_name }}"
+    port: "{{openproject_psql_db_port}}"
+    login_host: "{{openproject_psql_db_login_host}}"
+postgresql_users:
+  - name: "{{openproject_psql_db_user_name}}"
+    password: "{{openproject_psql_db_user_password}}"
+

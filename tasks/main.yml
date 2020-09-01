@@ -1,0 +1,128 @@
+---
+# tasks file for openproject
+
+- name: Check if Openproject is already installed.
+  stat: path=/usr/bin/openproject
+  register: openproject_file
+
+- name: Download Openproject repository installation script.
+  get_url:
+    url: "{{ op_package_source_url }}"
+    dest: /etc/yum.repos.d/openproject.repo
+    mode: 0666
+  when: not openproject_file.stat.exists
+
+- name: Install openproject
+  yum:
+    name: "openproject"
+    state: present
+
+- name: Copy installer.dat file to skip autoinstall
+  template:
+    src: "{{ openproject_autoinstaller_template }}"
+    dest: /etc/openproject/installer.dat
+    owner: openproject
+    group: openproject
+    mode: 0640
+
+##
+
+- name: Create Openproject SSL configuration folder.
+  file:
+    path: /etc/openproject/ssl
+    state: directory
+    mode: 0755
+  when: openproject_create_self_signed_cert
+
+- name: Create openssl private key
+  openssl_privatekey:
+    path: "{{ openproject_ssl_certificate_key }}"
+    size: 2048
+  when: openproject_create_self_signed_cert
+
+- name: Create openssl Certificate Signing Request (CSR)
+  openssl_csr:
+    path: "{{ openproject_ssl_certificate_csr }}"
+    privatekey_path: "{{ openproject_ssl_certificate_key }}"
+    organization_name: "{{ openproject_ssl_certificate_organization_name }}"
+    email_address: "{{ openproject_ssl_certificate_email_address }}"
+    common_name: "{{ openproject_domain }}"
+    subject_alt_name: "{{ openproject_ssl_subject_alt_name }}"
+  when: openproject_create_self_signed_cert
+
+- name: Create openssl certificate
+  openssl_certificate:
+    path: "{{ openproject_ssl_certificate }}"
+    privatekey_path: "{{ openproject_ssl_certificate_key }}"
+    csr_path: "{{ openproject_ssl_certificate_csr }}"
+    ownca_path: "{{openproject_ca_ssl_certificate_path}}"
+    ownca_privatekey_path: "{{openproject_ca_ssl_certificate_privatekey_path}}"
+    ownca_privatekey_passphrase: "{{openproject_ca_ssl_certificate_passphrase}}"
+    provider: "{{'ownca' if (openproject_ca_ssl_certificate) else 'selfsigned'}}"
+  when: openproject_create_self_signed_cert
+  register: openproject_certificate
+  notify:
+    - restart openproject
+
+##
+
+- name: Install Nginx engine
+  yum:
+    name: nginx
+    state: present
+
+- name: Copy nginx configuration file.
+  template:
+    src: "{{ nginx_default_config_template }}"
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify:
+    - reload service nginx
+
+- set_fact: opconf="openproject_nginx{{ '_ssl' if  openproject_redirect_http_to_https|bool == True else ''}}_config_template"
+
+- name: Copy nginx configuration file.
+  template:
+    src: "{{ lookup('vars',opconf )}}"
+    dest: /etc/nginx/conf.d/openproject{{ '_ssl' if  openproject_redirect_http_to_https|bool == True else ''}}.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify:
+    - reload service nginx
+
+- name: Copy openproject db configuration file.
+  template:
+    src: "{{ openproject_config_template }}"
+    dest: /etc/openproject/conf.d/op_conf
+    owner: openproject
+    group: openproject
+    mode: 0640
+  notify:
+    - configure openproject
+
+- name: Force all notified handlers to run at this point, not waiting for normal sync points
+  meta: flush_handlers
+
+- name: set selinux policy for directories
+  sefcontext:
+   target: '{{ item.target }}(/.*)?'
+   setype: "{{ item.setype }}"
+   reload: True
+   state: present
+  register: filecontext
+  with_items:
+  - { target: '/opt/openproject/public', setype: 'httpd_var_run_t' }
+
+- name: run restore context to reload selinux
+  shell: restorecon -R -v {{ item.target }}
+  when: filecontext.results[item.index].changed|bool
+  with_items:
+  - { index: 0, target: '/opt/openproject/public' }
+  notify:
+    - reload service nginx
+
+- name: selinux, allow network connect for httpd
+  shell: setsebool -P httpd_can_network_connect 1

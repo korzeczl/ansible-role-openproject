@@ -1,0 +1,43 @@
+---
+# defaults file for openproject
+op_package_source_url: https://dl.packager.io/srv/opf/openproject/stable/10/installer/el/8.repo
+openproject_url_slug: ""
+
+# vars file for openproject
+openproject_domain: "localhost"
+openproject_redirect_http_to_https: true
+
+# DB
+openproject_psql_db_login_host: "localhost"
+openproject_psql_db_name: 'openproject_db'
+openproject_psql_db_port: '5432'
+
+# DB user
+openproject_psql_db_user_name: 'openproject_user'
+openproject_psql_db_user_password: 'supersecure'
+
+# Templates
+nginx_default_config_template: "nginx.conf.j2"
+openproject_config_template: "op_conf.j2"
+openproject_autoinstaller_template: "installer.dat.j2"
+openproject_nginx_config_template: "openproject.conf.j2"
+openproject_nginx_ssl_config_template: "openproject_ssl.conf.j2"
+
+# SSL Self-signed Certificate Configuration.
+openproject_create_self_signed_cert: true
+
+# SSL Configuration.
+openproject_ssl_certificate: "/etc/openproject/ssl/openproject.crt"
+openproject_ssl_certificate_key: "/etc/openproject/ssl/openproject.key"
+openproject_ssl_certificate_csr: "/etc/openproject/ssl/openproject.csr"
+openproject_ssl_subject_alt_name: []
+
+openproject_ssl_certificate_country_name: FR
+openproject_ssl_certificate_organization_name: "My Organisation Name"
+openproject_ssl_certificate_email_address: contact@example.com
+
+# Certificate Authority
+openproject_ca_ssl_certificate: true
+openproject_ca_ssl_certificate_path: ""
+openproject_ca_ssl_certificate_privatekey_path: ""
+openproject_ca_ssl_certificate_passphrase: "passphrase"

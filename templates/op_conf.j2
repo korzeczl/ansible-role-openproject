@@ -1,0 +1,7 @@
+export DATABASE_URL="postgres://{{openproject_psql_db_user_name}}:{{openproject_psql_db_user_password}}@{{openproject_psql_db_login_host}}:{{openproject_psql_db_port}}/{{ openproject_psql_db_name }}"
+
+export MEMCACHED_SERVERS=tcp://{{memcached_listen_ip}}:{{memcached_port}}
+
+export SERVER_PATH_PREFIX="/{{openproject_url_slug}}"
+
+export SERVER_PROTOCOL_FORCE_HTTPS="true"

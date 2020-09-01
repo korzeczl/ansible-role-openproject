@@ -1,0 +1,20 @@
+---
+# handlers file for openproject
+
+# Configure GitLab.
+- name: configure openproject
+  command: openproject configure
+  register: openproject_configure
+  failed_when: 'openproject_configure.rc != 0'
+  
+# Restart GitLab.
+- name: restart openproject
+  command: openproject restart
+  register: openproject_restart
+  failed_when: 'openproject_restart.rc != 0'
+
+- name: reload service nginx
+  systemd:
+    name: nginx
+    state: reloaded
+    enabled: yes
